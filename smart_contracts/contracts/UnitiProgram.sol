@@ -1,39 +1,123 @@
 // SPDX-License-Identifier: MIT
+
+// Layout of Contract:
+// version
+// imports
+// errors
+// interfaces, libraries, contracts
+// Type declarations
+// State variables
+// Events
+// Modifiers
+// Functions
+
+// Layout of Functions:
+// constructor
+// receive function (if exists)
+// fallback function (if exists)
+// external
+// public
+// internal
+// private
+// internal & private view & pure functions
+// external & public view & pure functions
+
 pragma solidity 0.8.19;
 
-import "smart_contracts/node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "smart_contracts/node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "smart_contracts/node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "smart_contracts/node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "smart_contracts/node_modules/@openzeppelin/contracts/utils/Counters.sol";
 
-contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
+
+/**
+ * @title: UnitiProgram
+ * @author: Megabyte
+ * This contract is the basic implementation of the ERC721 token contract with the set TokenURI function and auto-incrementing tokenIds.
+ */
+contract UnitiProgram is ERC721Enumerable, ERC721URIStorage {
+    ////////////////////
+    // Error Messages //
+    ////////////////////
+    error UnitiProgram__ZeroAddress();
+
+
+    ////////////////////
+    // Libraries //
+    ////////////////////
     using Counters for Counters.Counter;
 
+    ////////////////////
+    // State Variables //
+    ////////////////////
     Counters.Counter private _tokenIdCounter;
 
-    string private programCreator;
+    string private s_programCreator;
 
-    string private uri;
+    string private s_uri;
 
+    ////////////////////
+    // Events //
+    ////////////////////
+    event UnitiProgram__Minted(address indexed _to, uint256 indexed _tokenId);
+    event UnitiProgram__TokenURIUpdated(
+        string indexed _tokenURI
+    );
+
+    ////////////////////
+    // Functions //
+    ////////////////////
     constructor(
         string memory _name,
         string memory _symbol,
         string memory _tokenURI,
         address _programCreator
     ) ERC721(_name, _symbol) {
-        programCreator = _programCreator;
-        uri = _tokenURI;
+        s_programCreator = _programCreator;
+        s_uri = _tokenURI;
     }
 
-    function safeMint(address to) external {
+
+     ////////////////////
+    // External Functions //
+    ////////////////////
+
+    /**
+     * @dev: This function mints a single token to the address specified.
+     * @param to: The address to mint the token to.
+     * @return: A boolean indicating if the mint was successful.
+     */
+    function safeMint(address to) external returns (bool){
+        if (to == address(0)) {
+            revert UnitiProgram__ZeroAddress();
+        }
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
+        emit UnitiProgram__Minted(to, tokenId);
+        _setTokenURI(tokenId, s_uri);
+
+        return true;
     }
 
+    /**
+     * @dev: This function is to set the new token uri.
+     * @param _uri: The new token uri.
+     */
     function setURI(string memory _uri) external {
-        uri = _uri;
+        s_uri = _uri;
+        emit UnitiProgram__TokenURIUpdated(_uri);
+    }
+
+    ////////////////////
+    // External and View Functions //
+    ////////////////////
+
+    /**
+     * @dev: This function returns the Program Creator address.
+     * @return: The Program Creator address.
+     */
+    function getProgramCreator() external view returns (address) {
+        return s_programCreator;
     }
 
     // The following functions are overrides required by Solidity.
