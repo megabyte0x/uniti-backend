@@ -24,7 +24,6 @@
 
 pragma solidity 0.8.19;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {UnitiCampaign} from "./UnitiCampaign.sol";
 import {UnitiProgram} from "./UnitiProgram.sol";
 
