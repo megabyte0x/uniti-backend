@@ -1,57 +1,154 @@
 // SPDX-License-Identifier: MIT
+
+// Layout of Contract:
+// version
+// imports
+// errors
+// interfaces, libraries, contracts
+// Type declarations
+// State variables
+// Events
+// Modifiers
+// Functions
+
+// Layout of Functions:
+// constructor
+// receive function (if exists)
+// fallback function (if exists)
+// external
+// public
+// internal
+// private
+// internal & private view & pure functions
+// external & public view & pure functions
+
 pragma solidity 0.8.19;
 
-import "smart_contracts/node_modules/@opengsn/contracts/src/ERC2771Recipient.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {UnitiCampaign} from "./UnitiCampaign.sol";
+import {UnitiProgram} from "./UnitiProgram.sol";
 
-import "./UnitiCampaign.sol";
-import "./UnitiProgram.sol";
+/**
+ * @title Uniti
+ * @author Megabyte
+ * This contract is the core of the Uniti Protocol. It is the main contract that creates the program and campaign contracts. It also stores the various mappings between the contracts.
+ */
+contract Uniti {
+    ////////////////////
+    // Error Messages //
+    ////////////////////
+    error Uniti__ZeroAddress();
+    error Uniti__NotProgramCreator();
 
-contract Uniti is ERC2771Recipient {
-    // array of all the programs
-    address[] public programs;
+    ////////////////////
+    // State Variables //
+    ////////////////////
 
-    // programCreator Address => Program Contract Address
-    mapping(address => address) programCreator;
+    address private s_erc6551Registry;
+    address private s_erc6551Account;
 
-    // program contract address => campaign contract address
-    mapping(address => address) campaignProgramCreator;
+    mapping(address programContractAddress => address programCreatorAddress) programCreator;
+    mapping(address campaignContractAddress => address programContractAddres) campaignCreator;
 
-    constructor(address _trustedForwarder) {
-        _setTrustedForwarder(trustedForwarder);
-    }
+    ////////////////////
+    // Events //
+    ////////////////////
+    event Uniti__ProgramCreated(address indexed _programCreator, address indexed _programContractAddress);
+    event Uniti__CampaginCreated(address indexed _programAddress, address indexed _campaignContractAddress);
 
-    function setTrustedForwarder(address _trustedForwarder) {
-        _setTrustedForwarder(_trustedForwarder);
-    }
+    ////////////////////
+    // Functions //
+    ////////////////////
+    constructor() {}
 
-    function createProgram(
-        string memory _name,
-        string _symbol,
-        string _tokenURI
-    ) external returns (address) {
+    ////////////////////
+    // External Functions //
+    ////////////////////
+
+    /**
+     *
+     */
+    // function setTrustedForwarder(address _trustedForwarder) external {
+    //     if (_trustedForwarder == address(0)) revert Uniti__ZeroAddress();
+    //     _setTrustedForwarder(_trustedForwarder);
+    // }
+
+    /**
+     * The function is to create a programv (Polygon Advocate) and store it in the mapping.
+     * @param _name Name of the Program NFT
+     * @param _symbol Symbol of the Program NFT
+     * @param _tokenURI TokenURI of the Program NFT
+     */
+    function createProgram(string memory _name, string memory _symbol, string memory _tokenURI)
+        external
+        returns (address programContractAddress)
+    {
         UnitiProgram program = new UnitiProgram(
             _name,
             _symbol,
-            tokenURI,
-            _msgSender()
+            _tokenURI,
+            msg.sender,
+            s_erc6551Registry,
+            s_erc6551Account
         );
-        programCreator[_msgSender()] = address(program);
+        programCreator[address(program)] = msg.sender;
+        emit Uniti__ProgramCreated(msg.sender, address(program));
+
+        return address(program);
     }
 
-    function createCampaign(
-        string memory _tokenURI,
-        address _programAddress
-    ) external returns (address) {
-        require(
-            programCreator[_msgSender()] == _programAddress,
-            "ERR:Not program creator"
-        );
+    /**
+     * This function is to create the campaign (THE QUEST) contract and store it in the mapping.
+     * @notice The program creator is the only one who can create the campaign.
+     * @param _tokenURI TokenURI of the Campaign NFT
+     * @param _programAddress Address of the Program NFT Contract
+     */
+    function createCampaign(string memory _tokenURI, address _programAddress)
+        external
+        returns (address campaignContractAddress)
+    {
+        if (programCreator[_programAddress] != msg.sender) revert Uniti__NotProgramCreator();
         UnitiCampaign campaign = new UnitiCampaign(_tokenURI, _programAddress);
 
-        campaignProgramCreator[_programAddress] = address(campaign);
+        campaignCreator[_programAddress] = address(campaign);
+        emit Uniti__CampaginCreated(_programAddress, address(campaign));
+
+        return address(campaign);
     }
 
-    function versionRecipient() external view override returns (string memory) {
-        return "1";
+    ////////////////////
+    // Private Functions //
+    ////////////////////
+
+    /**
+     * The function is to set the registry contract address.
+     * @param _registryContractAddress New registry contract address
+     */
+    function setRegistryContractAddress(address _registryContractAddress) private {
+        s_erc6551Registry = _registryContractAddress;
+    }
+
+    function setRegistryAccountAddress(address _registryAccountAddress) private {
+        s_erc6551Account = _registryAccountAddress;
+    }
+
+    ////////////////////
+    // External and View Functions //
+    ////////////////////
+
+    /**
+     * This functiuon returns the address of the program creator.
+     * @param _programAddress Address of the Program NFT Contract
+     */
+    function getProgramCreator(address _programAddress) external view returns (address programCreatorAddress) {
+        return programCreator[_programAddress];
+    }
+
+    /**
+     * This function is to get the address of the program contract through which the campaign was created.
+     * @param _campaignAddress Address of the Campaign NFT Contract
+     */
+    function getCampaignCreator(address _campaignAddress) external view returns (address programContractAddress) {
+        return campaignCreator[_campaignAddress];
     }
 }

@@ -72,8 +72,8 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
         string memory _symbol,
         string memory _tokenURI,
         address _programCreator,
-        address _erc6551Account,
-        address _erc6551Registry
+        address _erc6551Registry,
+        address _erc6551Account
     ) ERC721(_name, _symbol) {
         if (_programCreator == address(0) || _erc6551Account == address(0) || _erc6551Registry == address(0)) {
             revert UnitiProgram__ZeroAddress();
