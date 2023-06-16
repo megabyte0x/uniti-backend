@@ -1,10 +1,17 @@
-import express from "express";
+import express, { Request } from "express";
 import programRoutes from "./program.route"
 import campaignRoutes from "./campaign.route"
 
-// import uploadImageRoutes from "./uploadImage.route";
+export interface CustomRequest extends Request {
+    programAddress: string;
+}
 
 const router = express.Router();
+
+router.param('programAddress', (_req, _res, next, value) => {
+    (_req as CustomRequest).programAddress = value
+    next()
+})
 
 router.get("/", (_, res) => res.status(200).send("Healthy"));
 

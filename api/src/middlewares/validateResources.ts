@@ -5,7 +5,6 @@ import { throwError } from "../helpers/errorHandler.helper";
 const validate =
     (schema: AnyZodObject) =>
         (req: Request, _res: Response, next: NextFunction) => {
-            console.log(req.params)
             try {
                 schema.parse({
                     body: req.body,
@@ -15,7 +14,7 @@ const validate =
                 next();
             } catch (e: any) {
                 console.error(e.issues);
-                throwError(400, e.flatten);
+                throwError(400, e.issues[0].message);
             }
         };
 
