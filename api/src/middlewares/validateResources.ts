@@ -14,7 +14,7 @@ const validate =
                 next();
             } catch (e: any) {
                 console.error(e.issues);
-                throwError(400, e.flatten);
+                throwError(400, e.issues[0].message);
             }
         };
 
