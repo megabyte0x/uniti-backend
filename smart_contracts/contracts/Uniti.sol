@@ -48,7 +48,7 @@ contract Uniti {
     address[] private s_programs;
 
     mapping(address programContractAddress => address programCreatorAddress) programCreator;
-    mapping(address campaignContractAddress => address programContractAddres) campaignCreator;
+    mapping(address programContractAddres => address campaignContractAddress ) campaigns;
 
     ////////////////////
     // Events //
@@ -110,7 +110,7 @@ contract Uniti {
         if (programCreator[_programAddress] != msg.sender) revert Uniti__NotProgramCreator();
         UnitiCampaign campaign = new UnitiCampaign(_tokenURI, _programAddress);
 
-        campaignCreator[_programAddress] = address(campaign);
+        campaigns[_programAddress] = address(campaign);
         emit Uniti__CampaginCreated(_programAddress, address(campaign));
 
         return address(campaign);
@@ -148,8 +148,8 @@ contract Uniti {
      * This function is to get the address of the program contract through which the campaign was created.
      * @param _campaignAddress Address of the Campaign NFT Contract
      */
-    function getCampaignCreator(address _campaignAddress) external view returns (address programContractAddress) {
-        return campaignCreator[_campaignAddress];
+    function getCampaignAddress(address _programAddress) external view returns (address campaignContractAddress) {
+        return campaigns[_programAddress];
     }
 
     /**
