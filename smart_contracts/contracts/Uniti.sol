@@ -158,4 +158,16 @@ contract Uniti {
     function getPrograms() external view returns (address[] memory) {
         return s_programs;
     }
+
+
+    /**
+     * This functions returns the details of the program (name, tokenURI)
+     * @param _programAddress Program address 
+     */
+    function getProgramDetails(address _programAddress) external view returns(string memory name, string memory tokenURI) {
+        UnitiProgram program = UnitiProgram(_programAddress);
+        name =  program.name();
+        tokenURI = program.tokenURI(0);
+    }
+
 }

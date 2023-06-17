@@ -147,6 +147,30 @@ export const UNITI_CONTRACT_ABI = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_programAddress",
+        type: "address",
+      },
+    ],
+    name: "getProgramDetails",
+    outputs: [
+      {
+        internalType: "string",
+        name: "name",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "tokenURI",
+        type: "string",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "getPrograms",
     outputs: [
