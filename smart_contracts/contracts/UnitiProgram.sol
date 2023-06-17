@@ -154,7 +154,7 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
     }
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
-        return super.tokenURI(tokenId);
+        return s_uri;
     }
 
     function supportsInterface(bytes4 interfaceId)
