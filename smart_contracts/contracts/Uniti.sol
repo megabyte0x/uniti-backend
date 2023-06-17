@@ -45,6 +45,7 @@ contract Uniti {
 
     address private s_erc6551Registry;
     address private s_erc6551Account;
+    address[] private s_programs;
 
     mapping(address programContractAddress => address programCreatorAddress) programCreator;
     mapping(address campaignContractAddress => address programContractAddres) campaignCreator;
@@ -149,5 +150,12 @@ contract Uniti {
      */
     function getCampaignCreator(address _campaignAddress) external view returns (address programContractAddress) {
         return campaignCreator[_campaignAddress];
+    }
+
+    /**
+     * This function returns the array of all the program contract addresses.
+     */
+    function getPrograms() external view returns (address[] memory) {
+        return s_programs;
     }
 }
