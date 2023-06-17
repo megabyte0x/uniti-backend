@@ -12,7 +12,10 @@ import {
   getProgram,
 } from "../services/ethers.service";
 import { UNITI_CONTRACT_ADDRESS } from "../config/contracts.config";
-import { generateERC721TokenURI } from "../services/weaveDb.service";
+import {
+  checkEligibilityToJoin,
+  generateERC721TokenURI,
+} from "../services/weaveDb.service";
 
 export const postCreateProgram = asyncWrap(
   async (
@@ -34,7 +37,7 @@ export const postCreateProgram = asyncWrap(
         to: UNITI_CONTRACT_ADDRESS,
         data: functionSignature,
       };
-      res.status(201).json({ txnData });
+      res.status(201).json({ data: txnData });
     } catch (error) {
       throwError(500, error);
     }
@@ -47,7 +50,11 @@ export const getPrograms = asyncWrap(
       //  implement logic --megabyte
       const { programAddresses, programName, imageURLs } =
         await getAllPrograms();
-      res.status(201).json({ programAddresses, programName, imageURLs });
+      res.status(201).json({
+        addresses: programAddresses,
+        name: programName,
+        imageURLs: imageURLs,
+      });
     } catch (error) {
       throwError(500, error);
     }
@@ -66,7 +73,11 @@ export const getProgramByAddress = asyncWrap(
         programAddress
       );
 
-      res.status(201).json({ name, description, campaignURI });
+      res.status(201).json({
+        name: name,
+        description: description,
+        campaignURI: campaignURI,
+      });
     } catch (error) {
       throwError(500, error);
     }
@@ -81,9 +92,12 @@ export const postJoinProgramByAddress = asyncWrap(
   ) => {
     try {
       const { programAddress, walletAddress } = req.body;
-      //  implement logic --megabyte
+      const result = await checkEligibilityToJoin(
+        programAddress,
+        walletAddress
+      );
 
-      res.status(201).json({ programAddress, walletAddress });
+      res.status(201).json({ isEligible: result });
     } catch (error) {
       throwError(500, error);
     }
