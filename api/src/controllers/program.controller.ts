@@ -1,51 +1,89 @@
 import { NextFunction, Request, Response } from "express";
 import { asyncWrap } from "../middlewares/async.middleware";
 import { throwError } from "../helpers/errorHandler.helper";
-import { GetProgramByAddressRequest, GetProgramsRequest, PostCreateProgramRequest, PostJoinProgramByAddressRequest } from "../schemas/program.schema";
+import {
+  GetProgramByAddressRequest,
+  GetProgramsRequest,
+  PostCreateProgramRequest,
+  PostJoinProgramByAddressRequest,
+} from "../schemas/program.schema";
+import {
+  createProgramFunctionSignature,
+  getAllPrograms,
+} from "../services/ethers.service";
+import { UNITI_CONTRACT_ADDRESS } from "../config/contracts.config";
+import { generateERC721TokenURI } from "../services/weaveDb.service";
 
-
-export const postCreateProgram = asyncWrap(async (req: Request<{}, {}, PostCreateProgramRequest>, res: Response, _next: NextFunction) => {
+export const postCreateProgram = asyncWrap(
+  async (
+    req: Request<{}, {}, PostCreateProgramRequest>,
+    res: Response,
+    _next: NextFunction
+  ) => {
     try {
-        const { walletAddress, name, description } = req.body;
-        //  implement FILE too --lucifer
-
-        //  implement logic --megabyte file thing we will do together
-
-        res.status(201).json({ walletAddress, name, description })
+      const { name, symbol, description } = req.body;
+      //  implement FILE too --lucifer
+      const tokenURI = await generateERC721TokenURI(name, symbol, description);
+      //  implement logic --megabyte file thing we will do together
+      const functionSignature = createProgramFunctionSignature(
+        name,
+        symbol,
+        tokenURI
+      );
+      const txnData = {
+        to: UNITI_CONTRACT_ADDRESS,
+        data: functionSignature,
+      };
+      res.status(201).json({ txnData });
     } catch (error) {
-        throwError(500, error)
+      throwError(500, error);
     }
-})
+  }
+);
 
-export const getPrograms = asyncWrap(async (req: Request<{}, GetProgramsRequest>, res: Response, _next: NextFunction) => {
+export const getPrograms = asyncWrap(
+  async (req: Request, res: Response, _next: NextFunction) => {
     try {
-        const { walletAddress } = req.query
-        //  implement logic --megabyte
-
-        res.status(201).json({ walletAddress })
+      //  implement logic --megabyte
+      const { programAddresses, programName, tokenURIs } =
+        await getAllPrograms();
+      res.status(201).json({ programAddresses, programName, tokenURIs });
     } catch (error) {
-        throwError(500, error)
+      throwError(500, error);
     }
-})
+  }
+);
 
-export const getProgramByAddress = asyncWrap(async (req: Request<GetProgramByAddressRequest>, res: Response, _next: NextFunction) => {
+export const getProgramByAddress = asyncWrap(
+  async (
+    req: Request<GetProgramByAddressRequest>,
+    res: Response,
+    _next: NextFunction
+  ) => {
     try {
-        const programAddress = req.params.programAddress
-        //  implement logic --megabyte
+      const programAddress = req.params.programAddress;
+      //  implement logic --megabyte
 
-        res.status(201).json({ programAddress })
+      res.status(201).json({ programAddress });
     } catch (error) {
-        throwError(500, error)
+      throwError(500, error);
     }
-})
+  }
+);
 
-export const postJoinProgramByAddress = asyncWrap(async (req: Request<{}, {}, PostJoinProgramByAddressRequest>, res: Response, _next: NextFunction) => {
+export const postJoinProgramByAddress = asyncWrap(
+  async (
+    req: Request<{}, {}, PostJoinProgramByAddressRequest>,
+    res: Response,
+    _next: NextFunction
+  ) => {
     try {
-        const { programAddress, walletAddress } = req.body
-        //  implement logic --megabyte
+      const { programAddress, walletAddress } = req.body;
+      //  implement logic --megabyte
 
-        res.status(201).json({ programAddress, walletAddress })
+      res.status(201).json({ programAddress, walletAddress });
     } catch (error) {
-        throwError(500, error)
+      throwError(500, error);
     }
-})
+  }
+);
