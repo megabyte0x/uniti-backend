@@ -27,7 +27,7 @@ export const getAllPrograms = async () => {
     const programAddresses =
       (await unitiContract.getPrograms()) as Array<string>;
     const programName: Array<string> = [];
-    const tokenURIs: Array<string> = [];
+    const imageURLs: Array<string> = [];
 
     programAddresses.forEach(async (programAddress) => {
       const programContract = new ethers.Contract(
@@ -35,11 +35,11 @@ export const getAllPrograms = async () => {
         UNITI_PROGRAM_CONTRACT_ABI
       );
       const name = await programContract.name();
-      const uri = await programContract.tokenURI(0);
+      const tokenURI = await programContract.tokenURI(0);
       programName.push(name);
-      tokenURIs.push(uri);
+      imageURLs.push(tokenURI);
     });
-    return { programAddresses, programName, tokenURIs };
+    return { programAddresses, programName, imageURLs };
   } catch (error) {
     throw error;
   }
