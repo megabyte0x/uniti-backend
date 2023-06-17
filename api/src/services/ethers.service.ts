@@ -1,8 +1,8 @@
 import ethers from "ethers";
 import {
+  UNITI_CAMPAIGN_CONTRACT_ABI,
   UNITI_CONTRACT_ABI,
   UNITI_CONTRACT_ADDRESS,
-  UNITI_PROGRAM_CONTRACT_ABI,
 } from "../config/contracts.config";
 
 const unitiContract = new ethers.Contract(
@@ -30,16 +30,38 @@ export const getAllPrograms = async () => {
     const imageURLs: Array<string> = [];
 
     programAddresses.forEach(async (programAddress) => {
-      const programContract = new ethers.Contract(
-        programAddress,
-        UNITI_PROGRAM_CONTRACT_ABI
+      const { name, tokenURI } = await unitiContract.getProgramDetails(
+        programAddress
       );
-      const name = await programContract.name();
-      const tokenURI = await programContract.tokenURI(0);
+
+      //! TODO: Implement a function to get the Image URL through fetchting the data of the tokenURI
       programName.push(name);
       imageURLs.push(tokenURI);
     });
     return { programAddresses, programName, imageURLs };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getProgram = async (programAddress: string) => {
+  try {
+    const { name, tokenURI } = await unitiContract.getProgramDetails(
+      programAddress
+    );
+
+    //! TODO: Implement a function to get the Image URL through fetchting the data of the tokenURI
+    const description = tokenURI.description;
+
+    const campaginAddress = await unitiContract.getCampaignAddress();
+    const campaignContract = new ethers.Contract(
+      campaginAddress,
+      UNITI_CAMPAIGN_CONTRACT_ABI
+    );
+    const campaignURI = await campaignContract.uri();
+    //! TODO: Implement a function to get the Image URL, Name through fetchting the data of the tokenURI
+
+    return { name, description, campaignURI };
   } catch (error) {
     throw error;
   }

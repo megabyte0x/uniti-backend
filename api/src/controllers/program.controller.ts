@@ -3,13 +3,13 @@ import { asyncWrap } from "../middlewares/async.middleware";
 import { throwError } from "../helpers/errorHandler.helper";
 import {
   GetProgramByAddressRequest,
-  GetProgramsRequest,
   PostCreateProgramRequest,
   PostJoinProgramByAddressRequest,
 } from "../schemas/program.schema";
 import {
   createProgramFunctionSignature,
   getAllPrograms,
+  getProgram,
 } from "../services/ethers.service";
 import { UNITI_CONTRACT_ADDRESS } from "../config/contracts.config";
 import { generateERC721TokenURI } from "../services/weaveDb.service";
@@ -45,9 +45,9 @@ export const getPrograms = asyncWrap(
   async (req: Request, res: Response, _next: NextFunction) => {
     try {
       //  implement logic --megabyte
-      const { programAddresses, programName, tokenURIs } =
+      const { programAddresses, programName, imageURLs } =
         await getAllPrograms();
-      res.status(201).json({ programAddresses, programName, tokenURIs });
+      res.status(201).json({ programAddresses, programName, imageURLs });
     } catch (error) {
       throwError(500, error);
     }
@@ -62,9 +62,11 @@ export const getProgramByAddress = asyncWrap(
   ) => {
     try {
       const programAddress = req.params.programAddress;
-      //  implement logic --megabyte
+      const { name, description, campaignURI } = await getProgram(
+        programAddress
+      );
 
-      res.status(201).json({ programAddress });
+      res.status(201).json({ name, description, campaignURI });
     } catch (error) {
       throwError(500, error);
     }
