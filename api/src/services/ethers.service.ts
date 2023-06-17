@@ -24,10 +24,9 @@ export const createProgramFunctionSignature = (
 
 export const getAllPrograms = async () => {
   try {
-    const programAddresses =
-      (await unitiContract.getPrograms()) as Array<string>;
-    const programName: Array<string> = [];
-    const imageURLs: Array<string> = [];
+    const programAddresses = (await unitiContract.getPrograms()) as string[];
+    const programName: string[] = [];
+    const imageURLs: string[] = [];
 
     programAddresses.forEach(async (programAddress) => {
       const { name, tokenURI } = await unitiContract.getProgramDetails(
