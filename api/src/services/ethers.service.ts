@@ -66,3 +66,18 @@ export const getProgram = async (programAddress: string) => {
     throw error;
   }
 };
+
+export const createCampaign = async (
+  tokenURI: string,
+  programAddress: string
+) => {
+  try {
+    const campaingAddress = await unitiContract.createCampaign(
+      tokenURI,
+      programAddress
+    );
+    return campaingAddress;
+  } catch (error) {
+    throw error;
+  }
+};
