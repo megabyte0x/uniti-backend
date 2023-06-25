@@ -71,6 +71,9 @@ contract Uniti {
     ////////////////////
     event Uniti__ProgramCreated(address indexed _programCreator, address indexed _programContractAddress);
     event Uniti__CampaginCreated(address indexed _programAddress, address indexed _campaignContractAddress);
+    event Uniti__MerkleRootUpdated(address indexed _programAddress, bytes32 indexed _merkleRoot);
+    event Uniti__RegistryContractAddressUpdated(address indexed _registryContractAddress);
+    event Uniti__RegistryAccountAddressUpdated(address indexed _registryAccountAddress);
 
     ////////////////////
     // Modifiers //
@@ -78,6 +81,11 @@ contract Uniti {
 
     modifier isZeroAddress(address _address) {
         if (_address == address(0)) revert Uniti__ZeroAddress();
+        _;
+    }
+
+    modifier isProgramCreator(address _programAddress) {
+        if (programDetails[_programAddress].programCreator != msg.sender) revert Uniti__NotProgramCreator();
         _;
     }
 
@@ -130,11 +138,10 @@ contract Uniti {
     function createCampaign(string memory _tokenURI, address _programAddress)
         external
         isZeroAddress(_programAddress)
+        isProgramCreator(_programAddress)
         returns (address campaignContractAddress)
     {
         ProgramDetails storage programDetail = programDetails[_programAddress];
-
-        if (programDetail.programCreator != msg.sender) revert Uniti__NotProgramCreator();
 
         UnitiCampaign campaign = new UnitiCampaign(_tokenURI, _programAddress);
 
@@ -159,6 +166,8 @@ contract Uniti {
         isZeroAddress(_registryContractAddress)
     {
         s_erc6551Registry = _registryContractAddress;
+
+        emit Uniti__RegistryContractAddressUpdated(_registryContractAddress);
     }
 
     function setRegistryAccountAddress(address _registryAccountAddress)
@@ -166,6 +175,18 @@ contract Uniti {
         isZeroAddress(_registryAccountAddress)
     {
         s_erc6551Account = _registryAccountAddress;
+
+        emit Uniti__RegistryContractAddressUpdated(_registryAccountAddress);
+    }
+
+    function updateMerkleRoot(address _programAddress, bytes32 _merkleRoot)
+        private
+        isZeroAddress(_programAddress)
+        isProgramCreator(_programAddress)
+    {
+        programDetails[_programAddress].merkleRoot = _merkleRoot;
+
+        emit Uniti__MerkleRootUpdated(_programAddress, _merkleRoot);
     }
 
     ////////////////////
