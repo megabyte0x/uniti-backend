@@ -48,6 +48,13 @@ contract Uniti {
         mapping(address programAddress => uint256[] ids) campaignIds;
     }
 
+    struct ProgramDetails {
+        bytes32 merkleRoot;
+        uint256 latestCampaignsId;
+        address programCreator;
+        address[] campaigns;
+    }
+
     ////////////////////
     // State Variables //
     ////////////////////
@@ -57,8 +64,7 @@ contract Uniti {
     address[] private s_programs;
 
     mapping(address userAdddress => UserParticipation) userParticipation;
-    mapping(address programContractAddress => address programCreatorAddress) programCreator;
-    mapping(address programContractAddres => address campaignContractAddress) campaigns;
+    mapping(address programAddress => ProgramDetails) programDetails;
 
     ////////////////////
     // Events //
@@ -90,7 +96,7 @@ contract Uniti {
      * @param _symbol Symbol of the Program NFT
      * @param _tokenURI TokenURI of the Program NFT
      */
-    function createProgram(string memory _name, string memory _symbol, string memory _tokenURI)
+    function createProgram(string memory _name, string memory _symbol, string memory _tokenURI, bytes32 _merkleRoot)
         external
         returns (address programContractAddress)
     {
@@ -102,7 +108,14 @@ contract Uniti {
             s_erc6551Registry,
             s_erc6551Account
         );
-        programCreator[address(program)] = msg.sender;
+
+        programDetails[address(program)] = ProgramDetails({
+            merkleRoot: _merkleRoot,
+            latestCampaignsId: 0,
+            programCreator: msg.sender,
+            campaigns: new address[](0)
+        });
+
         emit Uniti__ProgramCreated(msg.sender, address(program));
 
         return address(program);
@@ -119,10 +132,15 @@ contract Uniti {
         isZeroAddress(_programAddress)
         returns (address campaignContractAddress)
     {
-        if (programCreator[_programAddress] != msg.sender) revert Uniti__NotProgramCreator();
+        ProgramDetails storage programDetail = programDetails[_programAddress];
+
+        if (programDetail.programCreator != msg.sender) revert Uniti__NotProgramCreator();
+
         UnitiCampaign campaign = new UnitiCampaign(_tokenURI, _programAddress);
 
-        campaigns[_programAddress] = address(campaign);
+        programDetail.campaigns.push(address(campaign));
+        programDetail.latestCampaignsId++;
+
         emit Uniti__CampaginCreated(_programAddress, address(campaign));
 
         return address(campaign);
@@ -164,20 +182,20 @@ contract Uniti {
         isZeroAddress(_programAddress)
         returns (address programCreatorAddress)
     {
-        return programCreator[_programAddress];
+        return programDetails[_programAddress].programCreator;
     }
 
     /**
      * This function is to get the address of the program contract through which the campaign was created.
      * @param _programAddress Address of the Campaign NFT Contract
      */
-    function getCampaignAddress(address _programAddress)
+    function getCampaigns(address _programAddress)
         external
         view
         isZeroAddress(_programAddress)
-        returns (address campaignContractAddress)
+        returns (address[] memory campaignContractAddress)
     {
-        return campaigns[_programAddress];
+        return programDetails[_programAddress].campaigns;
     }
 
     /**
