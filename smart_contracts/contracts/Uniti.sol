@@ -50,9 +50,18 @@ contract Uniti {
 
     struct ProgramDetails {
         bytes32 merkleRoot;
+        bytes32 blackListedMerkleRoot;
         uint256 latestCampaignsId;
+        uint256 programJoinFee;
         address programCreator;
         address[] campaigns;
+    }
+
+    struct CampaignDetails {
+        uint256 campaignId;
+        uint256 joinFee;
+        address programAddress;
+        address campaignAddress;
     }
 
     ////////////////////
@@ -65,6 +74,7 @@ contract Uniti {
 
     mapping(address userAdddress => UserParticipation) userParticipation;
     mapping(address programAddress => ProgramDetails) programDetails;
+    mapping(address campaignAddress => CampaignDetails) campaignDetails;
 
     ////////////////////
     // Events //
@@ -104,10 +114,13 @@ contract Uniti {
      * @param _symbol Symbol of the Program NFT
      * @param _tokenURI TokenURI of the Program NFT
      */
-    function createProgram(string memory _name, string memory _symbol, string memory _tokenURI, bytes32 _merkleRoot)
-        external
-        returns (address programContractAddress)
-    {
+    function createProgram(
+        string memory _name,
+        string memory _symbol,
+        string memory _tokenURI,
+        bytes32 _merkleRoot,
+        uint256 _joinFee
+    ) external returns (address programContractAddress) {
         UnitiProgram program = new UnitiProgram(
             _name,
             _symbol,
@@ -119,7 +132,9 @@ contract Uniti {
 
         programDetails[address(program)] = ProgramDetails({
             merkleRoot: _merkleRoot,
+            blackListedMerkleRoot: bytes32(0x0),
             latestCampaignsId: 0,
+            programJoinFee: _joinFee,
             programCreator: msg.sender,
             campaigns: new address[](0)
         });
@@ -135,22 +150,50 @@ contract Uniti {
      * @param _tokenURI TokenURI of the Campaign NFT
      * @param _programAddress Address of the Program NFT Contract
      */
-    function createCampaign(string memory _tokenURI, address _programAddress)
+    function createCampaign(string memory _tokenURI, address _programAddress, uint256 _joinFee)
         external
         isZeroAddress(_programAddress)
         isProgramCreator(_programAddress)
         returns (address campaignContractAddress)
     {
         ProgramDetails storage programDetail = programDetails[_programAddress];
+        uint256 latestCampaignId = programDetail.latestCampaignsId + 1;
 
         UnitiCampaign campaign = new UnitiCampaign(_tokenURI, _programAddress);
 
         programDetail.campaigns.push(address(campaign));
-        programDetail.latestCampaignsId++;
+        programDetail.latestCampaignsId = latestCampaignId;
+
+        campaignDetails[address(campaign)] = CampaignDetails({
+            campaignId: latestCampaignId,
+            joinFee: _joinFee,
+            programAddress: _programAddress,
+            campaignAddress: address(campaign)
+        });
 
         emit Uniti__CampaginCreated(_programAddress, address(campaign));
 
         return address(campaign);
+    }
+
+    function updateMerkleRoot(address _programAddress, bytes32 _merkleRoot)
+        external
+        isZeroAddress(_programAddress)
+        isProgramCreator(_programAddress)
+    {
+        programDetails[_programAddress].merkleRoot = _merkleRoot;
+
+        emit Uniti__MerkleRootUpdated(_programAddress, _merkleRoot);
+    }
+
+    function updateBlacklistedMerkleRoot(address _programAddress, bytes32 _blackListedMerkleRoot)
+        external
+        isZeroAddress(_programAddress)
+        isProgramCreator(_programAddress)
+    {
+        programDetails[_programAddress].blackListedMerkleRoot = _blackListedMerkleRoot;
+
+        emit Uniti__MerkleRootUpdated(_programAddress, _blackListedMerkleRoot);
     }
 
     ////////////////////
@@ -177,16 +220,6 @@ contract Uniti {
         s_erc6551Account = _registryAccountAddress;
 
         emit Uniti__RegistryContractAddressUpdated(_registryAccountAddress);
-    }
-
-    function updateMerkleRoot(address _programAddress, bytes32 _merkleRoot)
-        private
-        isZeroAddress(_programAddress)
-        isProgramCreator(_programAddress)
-    {
-        programDetails[_programAddress].merkleRoot = _merkleRoot;
-
-        emit Uniti__MerkleRootUpdated(_programAddress, _merkleRoot);
     }
 
     ////////////////////
