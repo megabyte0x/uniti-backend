@@ -38,6 +38,15 @@ contract Uniti {
     ////////////////////
     error Uniti__ZeroAddress();
     error Uniti__NotProgramCreator();
+    error Uniti__NoParticipationInCampaign(address _programAddress);
+
+    ////////////////////
+    // Struct //
+    ////////////////////
+    struct UserParticipation {
+        address[] programsIncludedIn;
+        mapping(address programAddress => uint256[] ids) campaignIds;
+    }
 
     ////////////////////
     // State Variables //
@@ -47,14 +56,24 @@ contract Uniti {
     address private s_erc6551Account;
     address[] private s_programs;
 
+    mapping(address userAdddress => UserParticipation) userParticipation;
     mapping(address programContractAddress => address programCreatorAddress) programCreator;
-    mapping(address programContractAddres => address campaignContractAddress ) campaigns;
+    mapping(address programContractAddres => address campaignContractAddress) campaigns;
 
     ////////////////////
     // Events //
     ////////////////////
     event Uniti__ProgramCreated(address indexed _programCreator, address indexed _programContractAddress);
     event Uniti__CampaginCreated(address indexed _programAddress, address indexed _campaignContractAddress);
+
+    ////////////////////
+    // Modifiers //
+    ////////////////////
+
+    modifier isZeroAddress(address _address) {
+        if (_address == address(0)) revert Uniti__ZeroAddress();
+        _;
+    }
 
     ////////////////////
     // Functions //
@@ -64,14 +83,6 @@ contract Uniti {
     ////////////////////
     // External Functions //
     ////////////////////
-
-    /**
-     *
-     */
-    // function setTrustedForwarder(address _trustedForwarder) external {
-    //     if (_trustedForwarder == address(0)) revert Uniti__ZeroAddress();
-    //     _setTrustedForwarder(_trustedForwarder);
-    // }
 
     /**
      * The function is to create a programv (Polygon Advocate) and store it in the mapping.
@@ -105,6 +116,7 @@ contract Uniti {
      */
     function createCampaign(string memory _tokenURI, address _programAddress)
         external
+        isZeroAddress(_programAddress)
         returns (address campaignContractAddress)
     {
         if (programCreator[_programAddress] != msg.sender) revert Uniti__NotProgramCreator();
@@ -124,11 +136,17 @@ contract Uniti {
      * The function is to set the registry contract address.
      * @param _registryContractAddress New registry contract address
      */
-    function setRegistryContractAddress(address _registryContractAddress) private {
+    function setRegistryContractAddress(address _registryContractAddress)
+        private
+        isZeroAddress(_registryContractAddress)
+    {
         s_erc6551Registry = _registryContractAddress;
     }
 
-    function setRegistryAccountAddress(address _registryAccountAddress) private {
+    function setRegistryAccountAddress(address _registryAccountAddress)
+        private
+        isZeroAddress(_registryAccountAddress)
+    {
         s_erc6551Account = _registryAccountAddress;
     }
 
@@ -140,15 +158,25 @@ contract Uniti {
      * This functiuon returns the address of the program creator.
      * @param _programAddress Address of the Program NFT Contract
      */
-    function getProgramCreator(address _programAddress) external view returns (address programCreatorAddress) {
+    function getProgramCreator(address _programAddress)
+        external
+        view
+        isZeroAddress(_programAddress)
+        returns (address programCreatorAddress)
+    {
         return programCreator[_programAddress];
     }
 
     /**
      * This function is to get the address of the program contract through which the campaign was created.
-     * @param _campaignAddress Address of the Campaign NFT Contract
+     * @param _programAddress Address of the Campaign NFT Contract
      */
-    function getCampaignAddress(address _programAddress) external view returns (address campaignContractAddress) {
+    function getCampaignAddress(address _programAddress)
+        external
+        view
+        isZeroAddress(_programAddress)
+        returns (address campaignContractAddress)
+    {
         return campaigns[_programAddress];
     }
 
@@ -159,15 +187,40 @@ contract Uniti {
         return s_programs;
     }
 
+    function getProgramForUser(address _userAddress)
+        external
+        view
+        isZeroAddress(_userAddress)
+        returns (address[] memory)
+    {
+        return userParticipation[_userAddress].programsIncludedIn;
+    }
+
+    function getCampaignsForUserInProgram(address _programAddress, address _userAddress)
+        external
+        view
+        isZeroAddress(_programAddress)
+        isZeroAddress(_userAddress)
+        returns (uint256[] memory campaignIds)
+    {
+        if (userParticipation[_userAddress].campaignIds[_programAddress].length == 0) {
+            revert Uniti__NoParticipationInCampaign(_programAddress);
+        }
+        return userParticipation[_userAddress].campaignIds[_programAddress];
+    }
 
     /**
      * This functions returns the details of the program (name, tokenURI)
-     * @param _programAddress Program address 
+     * @param _programAddress Program address
      */
-    function getProgramDetails(address _programAddress) external view returns(string memory name, string memory tokenURI) {
+    function getProgramDetails(address _programAddress)
+        external
+        view
+        isZeroAddress(_programAddress)
+        returns (string memory name, string memory tokenURI)
+    {
         UnitiProgram program = UnitiProgram(_programAddress);
-        name =  program.name();
+        name = program.name();
         tokenURI = program.tokenURI(0);
     }
-
 }
