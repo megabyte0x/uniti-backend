@@ -24,6 +24,7 @@
 
 pragma solidity 0.8.19;
 
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {UnitiCampaign} from "./UnitiCampaign.sol";
 import {UnitiProgram} from "./UnitiProgram.sol";
 
@@ -39,6 +40,7 @@ contract Uniti {
     error Uniti__ZeroAddress();
     error Uniti__NotProgramCreator();
     error Uniti__NoParticipationInCampaign(address _programAddress);
+    error Uniti__NotWhitelisted();
 
     ////////////////////
     // Struct //
@@ -50,12 +52,13 @@ contract Uniti {
 
     struct ProgramDetails {
         bytes32 merkleRoot;
-        bytes32 blackListedMerkleRoot;
         uint256 latestCampaignsId;
         uint256 programJoinFee;
         address programCreator;
         address[] campaigns;
+        mapping(address userAddress => bool blacklisted) blacklistedUsers;
     }
+    //
 
     struct CampaignDetails {
         uint256 campaignId;
@@ -99,6 +102,16 @@ contract Uniti {
         _;
     }
 
+    modifier isWhitelisted(bytes32[] calldata proof, address _programAddress) {
+        bytes32 leaf = keccak256(abi.encode(msg.sender));
+        bytes32 merkleRoot = programDetails[_programAddress].merkleRoot;
+        bool verified = MerkleProof.verify(proof, merkleRoot, leaf);
+        if (!verified) revert Uniti__NotWhitelisted();
+        _;
+    }
+
+    //! TODO: Blacklisted Check modifier
+
     ////////////////////
     // Functions //
     ////////////////////
@@ -130,14 +143,13 @@ contract Uniti {
             s_erc6551Account
         );
 
-        programDetails[address(program)] = ProgramDetails({
-            merkleRoot: _merkleRoot,
-            blackListedMerkleRoot: bytes32(0x0),
-            latestCampaignsId: 0,
-            programJoinFee: _joinFee,
-            programCreator: msg.sender,
-            campaigns: new address[](0)
-        });
+        ProgramDetails storage pointer = programDetails[address(program)];
+
+        pointer.merkleRoot = _merkleRoot;
+        pointer.latestCampaignsId = 0;
+        pointer.programJoinFee = _joinFee;
+        pointer.programCreator = msg.sender;
+        pointer.campaigns = new address[](0);
 
         emit Uniti__ProgramCreated(msg.sender, address(program));
 
@@ -186,14 +198,14 @@ contract Uniti {
         emit Uniti__MerkleRootUpdated(_programAddress, _merkleRoot);
     }
 
-    function updateBlacklistedMerkleRoot(address _programAddress, bytes32 _blackListedMerkleRoot)
+    function mintProgramNFT(address _programAddress, address _userAddress, bytes32[] calldata _proof)
         external
         isZeroAddress(_programAddress)
-        isProgramCreator(_programAddress)
+        isZeroAddress(_userAddress)
+        isWhitelisted(_proof, _programAddress)
     {
-        programDetails[_programAddress].blackListedMerkleRoot = _blackListedMerkleRoot;
-
-        emit Uniti__MerkleRootUpdated(_programAddress, _blackListedMerkleRoot);
+        UnitiProgram program = UnitiProgram(_programAddress);
+        program.safeMint(_userAddress);
     }
 
     ////////////////////
