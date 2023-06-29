@@ -59,7 +59,7 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
     address private s_erc6551Registry;
     address private s_erc6551Account;
 
-    mapping(address tokenId => address tkaAddress) tkbAddresses;
+    mapping(uint256 tokenId => address tkaAddress) tkbAddresses;
 
     ////////////////////
     // Events //
@@ -101,13 +101,12 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
         if (to == address(0)) {
             revert UnitiProgram__ZeroAddress();
         }
-        if(msg.sender != s_deployer) revert UnitiProgram__NotDeployer();
+        if (msg.sender != s_deployer) revert UnitiProgram__NotDeployer();
 
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
 
         _safeMint(to, tokenId);
-        emit UnitiProgram__Minted(to, tokenId);
 
         _setTokenURI(tokenId, s_uri);
 
