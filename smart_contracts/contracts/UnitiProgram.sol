@@ -40,6 +40,7 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
     // Error Messages //
     ////////////////////
     error UnitiProgram__ZeroAddress();
+    error UnitiProgram__NotDeployer();
 
     ////////////////////
     // Libraries //
@@ -53,9 +54,12 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
 
     string private s_uri;
 
+    address private immutable s_deployer;
     address private s_programCreator;
     address private s_erc6551Registry;
     address private s_erc6551Account;
+
+    mapping(address tokenId => address tkaAddress) tkbAddresses;
 
     ////////////////////
     // Events //
@@ -79,6 +83,7 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
             revert UnitiProgram__ZeroAddress();
         }
 
+        s_deployer = msg.sender;
         s_programCreator = _programCreator;
         s_uri = _tokenURI;
     }
@@ -96,6 +101,8 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
         if (to == address(0)) {
             revert UnitiProgram__ZeroAddress();
         }
+        if(msg.sender != s_deployer) revert UnitiProgram__NotDeployer();
+
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
 
@@ -105,6 +112,7 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
         _setTokenURI(tokenId, s_uri);
 
         address tkaAddress = _createTKA(tokenId);
+        tkbAddresses[tokenId] = tkaAddress;
         emit UnitiProgram__TKACreated(to, tokenId, tkaAddress);
 
         return true;
@@ -117,6 +125,10 @@ contract UnitiProgram is ERC721, ERC721Enumerable, ERC721URIStorage {
     function setURI(string memory _uri) external {
         s_uri = _uri;
         emit UnitiProgram__TokenURIUpdated(_uri);
+    }
+
+    function getTKBAddress(uint256 tokenId) external view returns (address) {
+        return tkbAddresses[tokenId];
     }
 
     ////////////////////
