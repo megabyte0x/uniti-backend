@@ -41,11 +41,13 @@ contract Uniti {
     error Uniti__NotProgramCreator();
     error Uniti__NoParticipationInCampaign(address _programAddress);
     error Uniti__NotWhitelisted();
+    error Uniti__WrongValueSent();
 
     ////////////////////
     // Struct //
     ////////////////////
     struct UserParticipation {
+        // created program array
         address[] programsIncludedIn;
         mapping(address programAddress => uint256[] ids) campaignIds;
     }
@@ -62,7 +64,7 @@ contract Uniti {
 
     struct CampaignDetails {
         uint256 campaignId;
-        uint256 joinFee;
+        uint256 campaignJoinFee;
         address programAddress;
         address campaignAddress;
     }
@@ -169,16 +171,15 @@ contract Uniti {
         returns (address campaignContractAddress)
     {
         ProgramDetails storage programDetail = programDetails[_programAddress];
-        uint256 latestCampaignId = programDetail.latestCampaignsId + 1;
+        uint256 latestCampaignId = ++programDetail.latestCampaignsId;
 
         UnitiCampaign campaign = new UnitiCampaign(_tokenURI, _programAddress);
 
         programDetail.campaigns.push(address(campaign));
-        programDetail.latestCampaignsId = latestCampaignId;
 
         campaignDetails[address(campaign)] = CampaignDetails({
             campaignId: latestCampaignId,
-            joinFee: _joinFee,
+            campaignJoinFee: _joinFee,
             programAddress: _programAddress,
             campaignAddress: address(campaign)
         });
@@ -200,12 +201,24 @@ contract Uniti {
 
     function mintProgramNFT(address _programAddress, address _userAddress, bytes32[] calldata _proof)
         external
+        payable
         isZeroAddress(_programAddress)
         isZeroAddress(_userAddress)
         isWhitelisted(_proof, _programAddress)
     {
+        ProgramDetails storage $programDetails = programDetails[_programAddress];
+        uint256 joinFee = $programDetails.programJoinFee;
+
+        if (joinFee != 0) {
+            if (joinFee != msg.value) revert Uniti__WrongValueSent();
+            (bool success,) = $programDetails.programCreator.call{value: msg.value}("");
+            require(success, "ERR:OT");
+        }
+
         UnitiProgram program = UnitiProgram(_programAddress);
+
         program.safeMint(_userAddress);
+        userParticipation[_userAddress].programsIncludedIn.push(_programAddress);
     }
 
     ////////////////////
